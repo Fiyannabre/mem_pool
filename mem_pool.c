@@ -84,6 +84,7 @@ void pool_uf_dest(mem_pool_uf* m){
     }
 }
 
+//size 请求分配的大小
 void* pool_uf_alloc(mem_pool_uf *m, int size){
     void *cur_addr = m->current;
     mem_node *node = (mem_node*)cur_addr;
@@ -99,16 +100,22 @@ void* pool_uf_alloc(mem_pool_uf *m, int size){
 
         node = node->next;
     }
-
-    void *addr = malloc(m->max_size);
+    
+    //new block
+    mem_pool_uf *addr = (mem_pool_uf *)malloc(m->max_size);
+    addr->first = m->first;
     node = (mem_node*)addr;
-
+    addr->current = node;
+    addr->max_size = m->max_size;
+    //set node
     node->free_ptr = (char*)addr + sizeof(mem_node);
     node->end = (char*)addr + m->max_size;
 
+    //insert in head
     node->next = m->current;
     m->current = node;
-
+    
+    //allocate
     char* ptr = node->free_ptr;
     node->free_ptr += size;
 
@@ -117,5 +124,11 @@ void* pool_uf_alloc(mem_pool_uf *m, int size){
 }
 
 void pool_uf_delete(mem_pool_uf * m){
-    m = NULL;
+    mem_node* node = m->first;
+    mem_pool_uf* tmp = (mem_pool_uf *)m->first;
+    while(!node){
+        node = node->next;
+        free(tmp);
+        tmp = (mem_pool_uf *)node;
+    }
 }
